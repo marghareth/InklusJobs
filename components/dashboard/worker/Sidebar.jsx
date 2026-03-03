@@ -1,8 +1,9 @@
 // components/dashboard/worker/Sidebar.jsx
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard, Map, Zap, Briefcase, Search,
@@ -12,7 +13,6 @@ import {
 import { storage } from '@/lib/storage';
 import { auth } from '@/lib/firebase';
 import { useAppData } from '@/hooks/useAppData';
-
 
 const NAV_ITEMS = [
   { id: 'dashboard',  label: 'Dashboard',  icon: LayoutDashboard, path: '/dashboard/worker', group: 'main' },
@@ -45,6 +45,7 @@ function getSidebarUser() {
 export default function Sidebar() {
   useAppData(); // re-renders whenever storage changes
   const [collapsed, setCollapsed] = useState(false);
+  const [logoError, setLogoError] = useState(false);
   const pathname = usePathname();
   const w = collapsed ? '72px' : '240px';
 
@@ -52,22 +53,52 @@ export default function Sidebar() {
 
   const { fullName, initials, email } = getSidebarUser();
 
+  // Handle window scroll to maintain fixed position
+  useEffect(() => {
+    // This ensures the sidebar stays fixed regardless of scroll
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, []);
+
   return (
     <>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800&display=swap');
 
-        .sb {
+        .layout-container {
+          display: flex;
+          height: 100vh;
+          overflow: hidden;
+        }
+
+        .sb-wrapper {
           width: ${w};
+          flex-shrink: 0;
+          height: 100vh;
+          position: sticky;
+          top: 0;
+          left: 0;
+          overflow-y: auto;
+          overflow-x: hidden;
+          transition: width 0.32s cubic-bezier(0.4,0,0.2,1);
+          scrollbar-width: none;
+          -ms-overflow-style: none;
+        }
+
+        .sb-wrapper::-webkit-scrollbar {
+          display: none;
+        }
+
+        .sb {
           min-height: 100vh;
           background: linear-gradient(175deg, #0D1829 0%, #1A2744 40%, #1E3055 70%, #111D38 100%);
           border-right: 1px solid rgba(255,255,255,0.06);
           display: flex;
           flex-direction: column;
-          transition: width 0.32s cubic-bezier(0.4,0,0.2,1);
           position: relative;
-          flex-shrink: 0;
-          overflow: hidden;
+          height: fit-content;
         }
 
         .sb::before {
@@ -99,9 +130,22 @@ export default function Sidebar() {
           border: 1.5px solid rgba(45,184,160,0.45);
           border-radius: 10px;
           display: flex; align-items: center; justify-content: center;
+          position: relative;
+          overflow: hidden;
+        }
+
+        .sb-logo-img {
+          width: 100%;
+          height: 100%;
+          object-fit: contain;
+          filter: brightness(0) invert(1); /* Makes dark logos white - remove if logo is already white */
+        }
+
+        .sb-logo-fallback {
           font-family: 'Lexend', sans-serif;
-          font-weight: 700; font-size: 13px; color: #fff;
-          box-shadow: 0 2px 10px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.20);
+          font-weight: 700; 
+          font-size: 13px; 
+          color: #fff;
         }
 
         .sb-brand {
@@ -171,9 +215,7 @@ export default function Sidebar() {
         .sb-nav {
           flex: 1; padding: 10px 8px;
           display: flex; flex-direction: column; gap: 1px;
-          overflow-y: auto; scrollbar-width: none;
         }
-        .sb-nav::-webkit-scrollbar { display: none; }
 
         .sb-section-label {
           font-family: 'Lexend', sans-serif;
@@ -335,69 +377,85 @@ export default function Sidebar() {
         }
       `}</style>
 
-      <aside className="sb">
-        <Link href="/dashboard/worker" className="sb-head" style={{ textDecoration: 'none' }}>
-          <div className="sb-logo">IJ</div>
-          <div className="sb-brand">
-            <div className="sb-brand-name">InklusiJobs</div>
-            <div className="sb-brand-sub">AI Platform</div>
-          </div>
-        </Link>
-
-        <div className="sb-user">
-          <div className="sb-avatar">
-            {initials}<div className="sb-dot" />
-          </div>
-          <div className="sb-uinfo">
-            <div className="sb-uname">{fullName}</div>
-            <div className="sb-uemail">{email}</div>
-          </div>
-        </div>
-
-        <nav className="sb-nav">
-          <div className="sb-section-label">Main Menu</div>
-          {NAV_ITEMS.filter(i => i.group === 'main').map(({ id, label, icon: Icon, path, badge }) => (
-            <Link
-              key={id}
-              href={path}
-              className={`sb-item${isActive(path) ? ' active' : ''}`}
-            >
-              <Icon className="sb-icon" />
-              <span className="sb-ilabel">{label}</span>
-              {badge && <span className="sb-badge">{badge}</span>}
-              <div className="sb-tip">{label}</div>
-            </Link>
-          ))}
-
-          <div className="sb-section-label" style={{ marginTop: 8 }}>Support</div>
-          {NAV_ITEMS.filter(i => i.group === 'support').map(({ id, label, icon: Icon, path }) => (
-            <Link
-              key={id}
-              href={path}
-              className={`sb-item${isActive(path) ? ' active' : ''}`}
-            >
-              <Icon className="sb-icon" />
-              <span className="sb-ilabel">{label}</span>
-              <div className="sb-tip">{label}</div>
-            </Link>
-          ))}
-        </nav>
-
-        <div className="sb-foot">
-          <Link href="/notifications" className="sb-fitem">
-            <Bell /><span>Notifications</span>
-            <div className="sb-ftip">Notifications</div>
+      <div className="sb-wrapper">
+        <aside className="sb">
+          <Link href="/dashboard/worker" className="sb-head" style={{ textDecoration: 'none' }}>
+            <div className="sb-logo">
+              {!logoError ? (
+                <Image
+                  src="/logo.png"
+                  alt="InklusiJobs"
+                  width={36}
+                  height={36}
+                  className="sb-logo-img"
+                  onError={() => setLogoError(true)}
+                  priority
+                />
+              ) : (
+                <span className="sb-logo-fallback">IJ</span>
+              )}
+            </div>
+            <div className="sb-brand">
+              <div className="sb-brand-name">InklusiJobs</div>
+              <div className="sb-brand-sub">AI Platform</div>
+            </div>
           </Link>
-          <Link href="/api/auth/signout" className="sb-fitem danger">
-            <LogOut /><span>Sign Out</span>
-            <div className="sb-ftip">Sign Out</div>
-          </Link>
-        </div>
 
-        <div className="sb-toggle" onClick={() => setCollapsed(!collapsed)}>
-          {collapsed ? <ChevronRight size={12} /> : <ChevronLeft size={12} />}
-        </div>
-      </aside>
+          <div className="sb-user">
+            <div className="sb-avatar">
+              {initials}<div className="sb-dot" />
+            </div>
+            <div className="sb-uinfo">
+              <div className="sb-uname">{fullName}</div>
+              <div className="sb-uemail">{email}</div>
+            </div>
+          </div>
+
+          <nav className="sb-nav">
+            <div className="sb-section-label">Main Menu</div>
+            {NAV_ITEMS.filter(i => i.group === 'main').map(({ id, label, icon: Icon, path, badge }) => (
+              <Link
+                key={id}
+                href={path}
+                className={`sb-item${isActive(path) ? ' active' : ''}`}
+              >
+                <Icon className="sb-icon" />
+                <span className="sb-ilabel">{label}</span>
+                {badge && <span className="sb-badge">{badge}</span>}
+                <div className="sb-tip">{label}</div>
+              </Link>
+            ))}
+
+            <div className="sb-section-label" style={{ marginTop: 8 }}>Support</div>
+            {NAV_ITEMS.filter(i => i.group === 'support').map(({ id, label, icon: Icon, path }) => (
+              <Link
+                key={id}
+                href={path}
+                className={`sb-item${isActive(path) ? ' active' : ''}`}
+              >
+                <Icon className="sb-icon" />
+                <span className="sb-ilabel">{label}</span>
+                <div className="sb-tip">{label}</div>
+              </Link>
+            ))}
+          </nav>
+
+          <div className="sb-foot">
+            <Link href="/notifications" className="sb-fitem">
+              <Bell /><span>Notifications</span>
+              <div className="sb-ftip">Notifications</div>
+            </Link>
+            <Link href="/api/auth/signout" className="sb-fitem danger">
+              <LogOut /><span>Sign Out</span>
+              <div className="sb-ftip">Sign Out</div>
+            </Link>
+          </div>
+
+          <div className="sb-toggle" onClick={() => setCollapsed(!collapsed)}>
+            {collapsed ? <ChevronRight size={12} /> : <ChevronLeft size={12} />}
+          </div>
+        </aside>
+      </div>
     </>
   );
 }
