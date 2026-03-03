@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { getResourcesForJob } from "@/lib/learn-content";
+import DashboardLayout from "@/components/dashboard/worker/DashboardLayout";
 
 // ─── localStorage helpers ────────────────────────────────────────────────────
 const LS = {
@@ -278,7 +279,9 @@ export default function RoadmapPage() {
   function computeUnlocked(completedChallenges, jId) {
     const unlocked = new Set([1]);
     [1, 2, 3].forEach(phase => {
-      const anyPhaseDone = Array.from(completedChallenges).some(id => id.includes(`_c${phase}`));
+      const anyPhaseDone = Array.from(completedChallenges).some(id =>
+        id.includes(`_c${phase}`) || id.includes(`_challenge_${phase}`)
+      );
       if (anyPhaseDone) unlocked.add(phase + 1);
     });
     setUnlockedPhases(unlocked);
@@ -301,142 +304,138 @@ export default function RoadmapPage() {
   const doneResources  = completedSkills.size;
   const overallPct     = progress.overall || 0;
 
-  if (loading) {
-    return (
-      <div className="rm-loading-screen">
-        <RoadmapStyles />
-        <div className="rm-loading-card">
-          <div className="rm-spinner" />
-          <h2>Building your personalised roadmap…</h2>
-          <p>This takes about 15 seconds. 🌟</p>
-          <div className="rm-loading-steps">
-            <div className="rm-lstep done">✅ Assessment complete</div>
-            <div className="rm-lstep done">✅ Skills scored</div>
-            <div className="rm-lstep active">⚙️ Generating roadmap…</div>
+  const content = (() => {
+    if (loading) {
+      return (
+        <div className="rm-loading-screen">
+          <RoadmapStyles />
+          <div className="rm-loading-card">
+            <div className="rm-spinner" />
+            <h2>Building your personalised roadmap…</h2>
+            <p>This takes about 15 seconds. 🌟</p>
+            <div className="rm-loading-steps">
+              <div className="rm-lstep done">✅ Assessment complete</div>
+              <div className="rm-lstep done">✅ Skills scored</div>
+              <div className="rm-lstep active">⚙️ Generating roadmap…</div>
+            </div>
           </div>
         </div>
-      </div>
-    );
-  }
+      );
+    }
 
-  if (error) {
-    return (
-      <div className="rm-loading-screen">
-        <RoadmapStyles />
-        <div className="rm-loading-card">
-          <p style={{ fontSize: "2.5rem" }}>😔</p>
-          <h2>Something went wrong</h2>
-          <p>{error}</p>
-          <button className="rm-btn-primary" onClick={() => { setError(null); setLoading(true); fetchRoadmap(jobId); }}>
-            Try Again
-          </button>
+    if (error) {
+      return (
+        <div className="rm-loading-screen">
+          <RoadmapStyles />
+          <div className="rm-loading-card">
+            <p style={{ fontSize: "2.5rem" }}>😔</p>
+            <h2>Something went wrong</h2>
+            <p>{error}</p>
+            <button className="rm-btn-primary" onClick={() => { setError(null); setLoading(true); fetchRoadmap(jobId); }}>
+              Try Again
+            </button>
+          </div>
         </div>
-      </div>
-    );
-  }
+      );
+    }
 
-  if (!roadmap) return null;
+    if (!roadmap) return null;
+
+    return (
+      <>
+        <RoadmapStyles />
+        <div className={`rm-root ${revealed ? "revealed" : ""}`}>
+          <div className="rm-shell">
+            {/* Header */}
+            <div className="rm-header">
+              <div className="rm-header-badge">Your Personalised Roadmap</div>
+              <h1 className="rm-header-title">{roadmap.title}</h1>
+              <p className="rm-header-summary">{roadmap.summary}</p>
+
+              {/* Stats */}
+              <div className="rm-stats-row">
+                <div className="rm-stat"><span className="rm-stat-v">{roadmap.totalWeeks || "—"}</span><span className="rm-stat-l">Weeks</span></div>
+                <div className="rm-stat-div" />
+                <div className="rm-stat"><span className="rm-stat-v">{doneResources}/{totalResources}</span><span className="rm-stat-l">Resources</span></div>
+                <div className="rm-stat-div" />
+                <div className="rm-stat"><span className="rm-stat-v">{overallPct}%</span><span className="rm-stat-l">Progress</span></div>
+              </div>
+
+              {/* Overall bar */}
+              <div className="rm-overall-wrap">
+                <div className="rm-overall-row">
+                  <span>Overall Progress</span>
+                  <span>{overallPct}%</span>
+                </div>
+                <div className="rm-overall-track">
+                  <div className="rm-overall-fill" style={{ width: `${overallPct}%` }} />
+                </div>
+              </div>
+            </div>
+
+            {/* Encouragement */}
+            {roadmap.encouragementMessage && (
+              <div className="rm-encourage">
+                <span>💬</span>
+                <p>{roadmap.encouragementMessage}</p>
+              </div>
+            )}
+
+            {/* Next step */}
+            {roadmap.nextStep && (
+              <div className="rm-nextstep">
+                <span className="rm-nextstep-label">Start Today</span>
+                <p className="rm-nextstep-text">{roadmap.nextStep}</p>
+              </div>
+            )}
+
+            {/* Phases */}
+            <div className="rm-phases-label">Your Learning Phases</div>
+            <div className="rm-phases-list">
+              {roadmap.phases?.map((phase, i) => {
+                const phaseResources = allResources.filter(r => r.phaseNumber === phase.phaseNumber);
+                const isLocked = !unlockedPhases.has(phase.phaseNumber);
+                return (
+                  <PhaseSection
+                    key={phase.phaseNumber}
+                    phase={phase}
+                    resources={phaseResources}
+                    completedSkills={completedSkills}
+                    onToggle={handleToggle}
+                    isLocked={isLocked}
+                    defaultOpen={i === 0}
+                  />
+                );
+              })}
+            </div>
+
+            {/* Bottom CTAs */}
+            <div className="rm-cta-row">
+              <button className="rm-btn-secondary" onClick={() => router.push("/results")}>← Back to Results</button>
+              <button className="rm-btn-secondary" onClick={() => {
+                LS.set(KEYS.ROADMAP, null);
+                setRoadmap(null);
+                setLoading(true);
+                fetchRoadmap(jobId);
+              }}>
+                Regenerate ↺
+              </button>
+              <button className="rm-btn-primary" onClick={() => router.push("/dashboard/worker")}>
+                Go to Dashboard →
+              </button>
+            </div>
+
+            <p className="rm-footer">🔒 Your progress is saved automatically as you check off skills.</p>
+          </div>
+        </div>
+      </>
+    );
+  })();
 
   return (
-    <>
-      <RoadmapStyles />
-      <div className={`rm-root ${revealed ? "revealed" : ""}`}>
-
-        {/* Top bar */}
-        <div className="rm-topbar">
-          <button className="rm-back-btn" onClick={() => router.push("/results")}>← Results</button>
-          <span className="rm-logo">Inklusi<span>Jobs</span></span>
-          <div className="rm-topbar-right">
-            <button className="rm-dash-btn" onClick={() => router.push("/dashboard/worker")}>
-              Dashboard →
-            </button>
-          </div>
-        </div>
-
-        <div className="rm-shell">
-          {/* Header */}
-          <div className="rm-header">
-            <div className="rm-header-badge">Your Personalised Roadmap</div>
-            <h1 className="rm-header-title">{roadmap.title}</h1>
-            <p className="rm-header-summary">{roadmap.summary}</p>
-
-            {/* Stats */}
-            <div className="rm-stats-row">
-              <div className="rm-stat"><span className="rm-stat-v">{roadmap.totalWeeks || "—"}</span><span className="rm-stat-l">Weeks</span></div>
-              <div className="rm-stat-div" />
-              <div className="rm-stat"><span className="rm-stat-v">{doneResources}/{totalResources}</span><span className="rm-stat-l">Resources</span></div>
-              <div className="rm-stat-div" />
-              <div className="rm-stat"><span className="rm-stat-v">{overallPct}%</span><span className="rm-stat-l">Progress</span></div>
-            </div>
-
-            {/* Overall bar */}
-            <div className="rm-overall-wrap">
-              <div className="rm-overall-row">
-                <span>Overall Progress</span>
-                <span>{overallPct}%</span>
-              </div>
-              <div className="rm-overall-track">
-                <div className="rm-overall-fill" style={{ width: `${overallPct}%` }} />
-              </div>
-            </div>
-          </div>
-
-          {/* Encouragement */}
-          {roadmap.encouragementMessage && (
-            <div className="rm-encourage">
-              <span>💬</span>
-              <p>{roadmap.encouragementMessage}</p>
-            </div>
-          )}
-
-          {/* Next step */}
-          {roadmap.nextStep && (
-            <div className="rm-nextstep">
-              <span className="rm-nextstep-label">Start Today</span>
-              <p className="rm-nextstep-text">{roadmap.nextStep}</p>
-            </div>
-          )}
-
-          {/* Phases */}
-          <div className="rm-phases-label">Your Learning Phases</div>
-          <div className="rm-phases-list">
-            {roadmap.phases?.map((phase, i) => {
-              const phaseResources = allResources.filter(r => r.phaseNumber === phase.phaseNumber);
-              const isLocked = !unlockedPhases.has(phase.phaseNumber);
-              return (
-                <PhaseSection
-                  key={phase.phaseNumber}
-                  phase={phase}
-                  resources={phaseResources}
-                  completedSkills={completedSkills}
-                  onToggle={handleToggle}
-                  isLocked={isLocked}
-                  defaultOpen={i === 0}
-                />
-              );
-            })}
-          </div>
-
-          {/* Bottom CTAs */}
-          <div className="rm-cta-row">
-            <button className="rm-btn-secondary" onClick={() => router.push("/results")}>← Back to Results</button>
-            <button className="rm-btn-secondary" onClick={() => {
-              LS.set(KEYS.ROADMAP, null);
-              setRoadmap(null);
-              setLoading(true);
-              fetchRoadmap(jobId);
-            }}>
-              Regenerate ↺
-            </button>
-            <button className="rm-btn-primary" onClick={() => router.push("/dashboard/worker")}>
-              Go to Dashboard →
-            </button>
-          </div>
-
-          <p className="rm-footer">🔒 Your progress is saved automatically as you check off skills.</p>
-        </div>
-      </div>
-    </>
+    <DashboardLayout>
+      {content}
+    </DashboardLayout>
   );
 }
 

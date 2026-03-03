@@ -8,27 +8,21 @@ import {
   GoogleAuthProvider,
   signInWithPopup,
   signInWithRedirect,
-  getRedirectResult,
   sendPasswordResetEmail,
 } from "firebase/auth";
 import { auth } from "@/lib/firebase";
+import { getProgress } from "@/lib/progressHelpers";
 import { useRouter } from "next/navigation";
 import { storage } from "@/lib/storage";
 
-// ─── Cookie helpers ───────────────────────────────────────────────────────────
 function setCookie(name, value, days = 30) {
   const expires = new Date(Date.now() + days * 864e5).toUTCString();
   document.cookie = `${name}=${value}; expires=${expires}; path=/; SameSite=Lax`;
 }
-function deleteCookie(name) {
-  document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
-}
 
-// ─── Google Provider (singleton) ─────────────────────────────────────────────
 const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({ prompt: "select_account" });
 
-// ─── Hook ─────────────────────────────────────────────────────────────────────
 export function useAuthModal() {
   const [isOpen, setIsOpen] = useState(false);
   const [tab, setTab]       = useState("signin");
@@ -37,7 +31,6 @@ export function useAuthModal() {
   return { isOpen, tab, open, close };
 }
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
 const css = `
   @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600;700&display=swap');
 
@@ -51,7 +44,6 @@ const css = `
     animation: am-fade 0.22s ease;
   }
   @keyframes am-fade { from { opacity: 0; } to { opacity: 1; } }
-
   .am-modal {
     position: relative; width: 100%; max-width: 860px; min-height: 500px;
     border-radius: 24px; overflow: hidden;
@@ -63,7 +55,6 @@ const css = `
     from { opacity: 0; transform: translateY(20px) scale(0.97); }
     to   { opacity: 1; transform: translateY(0) scale(1); }
   }
-
   .am-close {
     position: absolute; top: 14px; right: 14px; z-index: 10;
     width: 30px; height: 30px; border-radius: 50%; border: none;
@@ -72,8 +63,6 @@ const css = `
     transition: background 0.18s; backdrop-filter: blur(4px);
   }
   .am-close:hover { background: rgba(255,255,255,0.30); }
-  .am-close:focus-visible { outline: 2px solid #2563EB; outline-offset: 2px; }
-
   .am-left {
     background: linear-gradient(155deg, #0F2942 0%, #1a5f7a 45%, #6dbfb8 80%, #c9a4d4 100%);
     display: flex; flex-direction: column; justify-content: flex-end;
@@ -95,19 +84,16 @@ const css = `
     font-family: 'DM Sans', sans-serif; font-size: 11px;
     color: rgba(255,255,255,0.50); letter-spacing: 0.3px;
   }
-
   .am-right {
     background: #F7F6F4; padding: 44px 48px;
     display: flex; flex-direction: column; justify-content: center;
     overflow-y: auto; max-height: 90vh;
   }
-
   .am-logo {
     font-family: 'DM Serif Display', serif; font-size: 19px;
     color: #1E293B; margin: 0 0 24px; letter-spacing: -0.3px; display: block;
   }
   .am-logo span { color: #15803D; }
-
   .am-tabs { display: flex; border-bottom: 2px solid #E2E8F0; margin-bottom: 24px; }
   .am-tab {
     font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 600;
@@ -120,7 +106,6 @@ const css = `
     content: ''; position: absolute; bottom: -2px; left: 0; right: 0;
     height: 2px; background: #1E40AF; border-radius: 2px;
   }
-
   .am-heading {
     font-family: 'DM Sans', sans-serif;
     font-size: clamp(20px, 2.4vw, 26px); font-weight: 700;
@@ -136,11 +121,9 @@ const css = `
     font-family: 'DM Sans', sans-serif;
     text-decoration: underline; text-underline-offset: 3px;
   }
-
   .am-form     { display: flex; flex-direction: column; gap: 16px; }
   .am-field    { display: flex; flex-direction: column; gap: 5px; }
   .am-name-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-
   .am-label {
     font-family: 'DM Sans', sans-serif; font-size: 11px; font-weight: 600;
     color: #64748B; letter-spacing: 0.4px; text-transform: uppercase;
@@ -156,7 +139,6 @@ const css = `
   .am-input::placeholder { color: #CBD5E1; }
   .am-input:focus { border-color: #2563EB; box-shadow: 0 0 0 3px rgba(37,99,235,0.10); }
   .am-input.with-icon { padding-right: 42px; }
-
   .am-eye {
     position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
     background: none; border: none; cursor: pointer;
@@ -164,7 +146,6 @@ const css = `
     transition: color 0.18s;
   }
   .am-eye:hover { color: #1E293B; }
-
   .am-row { display: flex; align-items: center; justify-content: space-between; }
   .am-remember {
     display: flex; align-items: center; gap: 7px;
@@ -177,23 +158,19 @@ const css = `
     color: #1E40AF; text-decoration: underline; text-underline-offset: 3px;
     background: none; border: none; cursor: pointer; padding: 0;
   }
-
   .am-submit {
     width: 100%; font-family: 'DM Sans', sans-serif; font-weight: 700; font-size: 14px;
     color: #fff; background: #1E293B; border: none; border-radius: 12px; padding: 13px;
     cursor: pointer; letter-spacing: 0.3px; transition: background 0.2s, transform 0.15s;
   }
-  .am-submit:hover         { background: #1E40AF; transform: translateY(-1px); }
-  .am-submit:disabled      { opacity: 0.6; cursor: not-allowed; transform: none; }
-  .am-submit:focus-visible { outline: 2px solid #2563EB; outline-offset: 3px; }
-
+  .am-submit:hover    { background: #1E40AF; transform: translateY(-1px); }
+  .am-submit:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
   .am-divider {
     display: flex; align-items: center; gap: 10px;
     font-family: 'DM Sans', sans-serif; font-size: 10px; font-weight: 700;
     color: #94A3B8; letter-spacing: 1.2px; text-transform: uppercase;
   }
   .am-divider::before, .am-divider::after { content: ''; flex: 1; height: 1px; background: #E2E8F0; }
-
   .am-social { display: flex; flex-direction: column; gap: 9px; }
   .am-social-btn {
     width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px;
@@ -203,15 +180,9 @@ const css = `
     transition: border-color 0.18s, background 0.18s, transform 0.15s;
   }
   .am-social-btn:hover { background: #f8fafc; border-color: #CBD5E1; transform: translateY(-1px); }
-
   .am-error {
     font-family: 'DM Sans', sans-serif; font-size: 13px;
     color: #DC2626; background: #FEF2F2; border: 1px solid #FECACA;
-    border-radius: 8px; padding: 10px 14px; margin-bottom: 4px;
-  }
-  .am-warning {
-    font-family: 'DM Sans', sans-serif; font-size: 13px;
-    color: #92400E; background: #FFFBEB; border: 1px solid #FDE68A;
     border-radius: 8px; padding: 10px 14px; margin-bottom: 4px;
   }
   .am-success {
@@ -219,7 +190,12 @@ const css = `
     color: #065F46; background: #ECFDF5; border: 1px solid #A7F3D0;
     border-radius: 8px; padding: 10px 14px; margin-bottom: 4px;
   }
-
+  .am-loading {
+    font-family: 'DM Sans', sans-serif; font-size: 13px;
+    color: #1E40AF; background: #EFF6FF; border: 1px solid #BFDBFE;
+    border-radius: 8px; padding: 10px 14px; margin-bottom: 4px;
+    display: flex; align-items: center; gap: 8px;
+  }
   .am-role-badge {
     display: inline-flex; align-items: center; gap: 6px;
     font-family: 'DM Sans', sans-serif; font-size: 11px; font-weight: 700;
@@ -232,7 +208,6 @@ const css = `
     content: ''; width: 6px; height: 6px;
     border-radius: 50%; background: currentColor; opacity: 0.7;
   }
-
   @media (max-width: 600px) {
     .am-modal    { grid-template-columns: 1fr; border-radius: 20px; }
     .am-left     { display: none; }
@@ -241,7 +216,6 @@ const css = `
   }
 `;
 
-// ─── Icons ────────────────────────────────────────────────────────────────────
 const EyeIcon = () => (
   <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
@@ -266,22 +240,22 @@ const FacebookIcon = () => (
   </svg>
 );
 
-// ─── Firebase error messages ──────────────────────────────────────────────────
+// ✅ Fixed: handles both auth/invalid-credential AND auth/user-not-found
+// Firebase now returns auth/invalid-credential for unregistered emails too
 function friendlyError(code) {
   switch (code) {
-    case "auth/email-already-in-use":    return "An account with this email already exists. Please sign in instead.";
-    case "auth/invalid-email":           return "Please enter a valid email address.";
-    case "auth/weak-password":           return "Password must be at least 6 characters.";
-    case "auth/user-not-found":          return "No account found with that email. Please sign up first.";
-    case "auth/wrong-password":          return "Incorrect password. Please try again.";
-    case "auth/invalid-credential":      return "Incorrect email or password. If you signed up with Google and want to use email/password too, click \"Forgot password?\" to set one.";
-    case "auth/too-many-requests":       return "Too many attempts. Please wait a moment and try again.";
-    case "auth/network-request-failed":  return "Network error. Please check your connection.";
-    default:                             return "Something went wrong. Please try again.";
+    case "auth/email-already-in-use":   return "An account with this email already exists. Please sign in instead.";
+    case "auth/invalid-email":          return "Please enter a valid email address.";
+    case "auth/weak-password":          return "Password must be at least 6 characters.";
+    case "auth/user-not-found":         return "No account found with that email. Please sign up first.";
+    case "auth/wrong-password":         return "Incorrect password. Please try again.";
+    case "auth/invalid-credential":     return "No account found with that email, or incorrect password. Please sign up first or try again.";
+    case "auth/too-many-requests":      return "Too many attempts. Please wait a moment and try again.";
+    case "auth/network-request-failed": return "Network error. Please check your connection.";
+    default:                            return "Something went wrong. Please try again.";
   }
 }
 
-// ─── Google Sign-In ───────────────────────────────────────────────────────────
 async function handleGoogleSignIn() {
   try {
     const result = await signInWithPopup(auth, googleProvider);
@@ -294,32 +268,56 @@ async function handleGoogleSignIn() {
       await signInWithRedirect(auth, googleProvider);
       return { user: null, error: null };
     }
-    console.error("Google sign-in error:", err.code, err.message);
     return { user: null, error: friendlyError(err.code) };
+  }
+}
+
+async function getRedirectPath(firebaseUser, intendedRole) {
+  try {
+    const progress = await getProgress(firebaseUser.uid);
+    const role = progress.role || intendedRole || "worker";
+
+    if (role === "employer") {
+      return progress.onboarding_complete
+        ? "/employer/dashboard"
+        : "/employer/onboarding";
+    }
+
+    if (progress.onboarding_complete) return "/dashboard/worker";
+    return "/onboarding";
+
+  } catch (err) {
+    console.warn("Could not read Firestore progress, defaulting to onboarding:", err);
+    return "/onboarding";
   }
 }
 
 // ─── SignInForm ───────────────────────────────────────────────────────────────
 function SignInForm({ role, onSignIn, onSwitchTab }) {
-  const [showPwd, setShowPwd] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError]     = useState("");
-  const [success, setSuccess] = useState("");
+  const [showPwd, setShowPwd]   = useState(false);
+  const [loading, setLoading]   = useState(false);
+  const [checking, setChecking] = useState(false);
+  const [error, setError]       = useState("");
+  const [success, setSuccess]   = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
+    setError(""); setSuccess("");
     setLoading(true);
     const data  = new FormData(e.target);
     const email = data.get("email")?.trim().toLowerCase();
     const pwd   = data.get("password");
     try {
       const credential = await signInWithEmailAndPassword(auth, email, pwd);
-      onSignIn(credential.user);
-    } catch (err) {
-      setError(friendlyError(err.code));
-    } finally {
       setLoading(false);
+      setChecking(true);
+      await onSignIn(credential.user);
+    } catch (err) {
+      // ✅ Reset ALL states so the form is usable again
+      setLoading(false);
+      setChecking(false);
+      setError(friendlyError(err.code));
+      // ✅ No redirect happens — user stays on the form and sees the error
     }
   };
 
@@ -333,6 +331,7 @@ function SignInForm({ role, onSignIn, onSwitchTab }) {
       </p>
       {error   && <div className="am-error">{error}</div>}
       {success && <div className="am-success">{success}</div>}
+      {checking && <div className="am-loading">⏳ Checking your progress…</div>}
       <form className="am-form" onSubmit={handleSubmit}>
         <div className="am-field">
           <label className="am-label" htmlFor="si-email">Email</label>
@@ -352,26 +351,24 @@ function SignInForm({ role, onSignIn, onSwitchTab }) {
           <button type="button" className="am-forgot" onClick={async () => {
             const emailEl = document.getElementById("si-email");
             const email = emailEl?.value?.trim();
-            if (!email) { setError("Enter your email above first, then click Forgot password."); setSuccess(""); return; }
+            if (!email) { setError("Enter your email above first."); return; }
             try {
               await sendPasswordResetEmail(auth, email);
               setError(""); setSuccess("✅ Reset email sent! Check your inbox.");
-            } catch (err) {
-              setSuccess(""); setError(friendlyError(err.code));
-            }
+            } catch (err) { setSuccess(""); setError(friendlyError(err.code)); }
           }}>Forgot password?</button>
         </div>
-        <button type="submit" className="am-submit" disabled={loading}>
-          {loading ? "Signing in…" : "Sign In"}
+        <button type="submit" className="am-submit" disabled={loading || checking}>
+          {loading ? "Signing in…" : checking ? "Checking progress…" : "Sign In"}
         </button>
         <div className="am-divider">or</div>
         <div className="am-social">
-          <button type="button" className="am-social-btn" disabled={loading} onClick={async () => {
+          <button type="button" className="am-social-btn" disabled={loading || checking} onClick={async () => {
             setLoading(true); setError("");
             const { user, error: err } = await handleGoogleSignIn();
-            setLoading(false);
-            if (err) { setError(err); return; }
-            if (user) onSignIn(user);
+            if (err) { setError(err); setLoading(false); setChecking(false); return; }
+            if (user) { setLoading(false); setChecking(true); await onSignIn(user); }
+            else { setLoading(false); setChecking(false); }
           }}><GoogleIcon /> Continue with Google</button>
           <button type="button" className="am-social-btn"><FacebookIcon /> Continue with Facebook</button>
         </div>
@@ -398,11 +395,9 @@ function SignUpForm({ role, onSignUp, onSwitchTab }) {
     try {
       const credential = await createUserWithEmailAndPassword(auth, email, pwd);
       await updateProfile(credential.user, { displayName: `${firstName} ${lastName}` });
-      onSignUp(credential.user);
+      await onSignUp(credential.user, { firstName, lastName });
     } catch (err) {
-      console.error("Firebase signup error:", err.code, err.message);
       setError(friendlyError(err.code));
-    } finally {
       setLoading(false);
     }
   };
@@ -447,11 +442,10 @@ function SignUpForm({ role, onSignUp, onSwitchTab }) {
         <div className="am-social">
           <button type="button" className="am-social-btn" disabled={loading} onClick={async () => {
             setLoading(true); setError("");
-            localStorage.setItem("ij_role", role || "worker");
             const { user, error: err } = await handleGoogleSignIn();
             setLoading(false);
             if (err) { setError(err); return; }
-            if (user) onSignUp(user);
+            if (user) await onSignUp(user, {});
           }}><GoogleIcon /> Continue with Google</button>
           <button type="button" className="am-social-btn"><FacebookIcon /> Continue with Facebook</button>
         </div>
@@ -461,18 +455,9 @@ function SignUpForm({ role, onSignUp, onSwitchTab }) {
 }
 
 // ─── Modal ────────────────────────────────────────────────────────────────────
-export default function AuthModal({
-  isOpen,
-  onClose,
-  defaultTab = "signin",
-  role = null,
-  onSignUpComplete,
-  onSignInComplete,
-}) {
+export default function AuthModal({ isOpen, onClose, defaultTab = "signin", role = null, onSignUpComplete, onSignInComplete }) {
   const [tab, setTab] = useState(defaultTab);
   const overlayRef    = useRef(null);
-  const modalRef      = useRef(null);
-  const closeRef      = useRef(null);
   const router        = useRouter();
 
   useEffect(() => { if (isOpen) setTab(defaultTab); }, [isOpen, defaultTab]);
@@ -486,15 +471,44 @@ export default function AuthModal({
 
   const handleOverlay = useCallback((e) => { if (e.target === overlayRef.current) onClose(); }, [onClose]);
 
-  const redirectByRole = async (firebaseUser, userRole) => {
-    const resolvedRole = userRole || role || "worker";
+  const handleRedirect = async (firebaseUser, intendedRole) => {
+    const resolvedRole = intendedRole || role || "worker";
+    const token = await firebaseUser.getIdToken();
+    setCookie("firebase_token", token, 7);
+    setCookie("ij_role", resolvedRole, 30);
+    localStorage.setItem("ij_role", resolvedRole);
+
+    const path = await getRedirectPath(firebaseUser, resolvedRole);
+
+    if (path === "/dashboard/worker" || path === "/employer/dashboard") {
+      setCookie("ij_onboarded", "true", 30);
+    }
+
+    onClose?.();
+    router.push(path);
+  };
+
+  const handleSignIn = async (firebaseUser) => {
+    const savedRole = localStorage.getItem("ij_role") || role || "worker";
+    onSignInComplete?.(savedRole);
+    await handleRedirect(firebaseUser, savedRole);
+  };
+
+  const handleSignUp = async (firebaseUser, nameData) => {
+    const resolvedRole = role || "worker";
+
+    if (nameData?.firstName) {
+      localStorage.setItem("worker_first_name", nameData.firstName);
+      localStorage.setItem("worker_last_name",  nameData.lastName || "");
+    }
+
+    onSignUpComplete?.(resolvedRole);
 
     const token = await firebaseUser.getIdToken();
     setCookie("firebase_token", token, 7);
     setCookie("ij_role", resolvedRole, 30);
     localStorage.setItem("ij_role", resolvedRole);
 
-    // ── Save email + display name to storage ──────────────────────────────
     storage.update({
       profile: {
         email:       firebaseUser.email || "",
@@ -502,33 +516,9 @@ export default function AuthModal({
         firebaseUid: firebaseUser.uid,
       },
     });
-    // ─────────────────────────────────────────────────────────────────────
 
     onClose?.();
-
-    if (resolvedRole === "employer") {
-      const empOnboarded = localStorage.getItem("ij_emp_onboarded");
-      router.push(empOnboarded === "true" ? "/employer/dashboard" : "/employer/onboarding");
-    } else {
-      const workerOnboarded = localStorage.getItem("ij_onboarded");
-      if (workerOnboarded === "true") {
-        setCookie("ij_onboarded", "true", 30);
-        router.push("/dashboard/worker");
-      } else {
-        router.push("/onboarding");
-      }
-    }
-  };
-
-  const handleSignIn = async (firebaseUser) => {
-    const savedRole = localStorage.getItem("ij_role") || role || "worker";
-    onSignInComplete?.(savedRole);
-    await redirectByRole(firebaseUser, savedRole);
-  };
-
-  const handleSignUp = async (firebaseUser) => {
-    onSignUpComplete?.(role || "worker");
-    await redirectByRole(firebaseUser, role || "worker");
+    router.push(resolvedRole === "employer" ? "/employer/onboarding" : "/onboarding");
   };
 
   if (!isOpen) return null;
@@ -537,8 +527,8 @@ export default function AuthModal({
     <>
       <style>{css}</style>
       <div className="am-overlay" ref={overlayRef} onClick={handleOverlay} role="dialog" aria-modal="true" aria-label="Authentication">
-        <div className="am-modal" ref={modalRef}>
-          <button className="am-close" onClick={onClose} aria-label="Close modal" ref={closeRef}>✕</button>
+        <div className="am-modal">
+          <button className="am-close" onClick={onClose} aria-label="Close modal">✕</button>
           <div className="am-left" aria-hidden="true">
             <div className="am-left-body">
               <p className="am-left-quote">&ldquo;Skills that speak louder than credentials.&rdquo;</p>
@@ -548,7 +538,7 @@ export default function AuthModal({
           <div className="am-right">
             <span className="am-logo">Inklusi<span>Jobs</span></span>
             <div className="am-tabs">
-              <button className={`am-tab ${tab === "signin"  ? "active" : ""}`} onClick={() => setTab("signin")}>Sign In</button>
+              <button className={`am-tab ${tab === "signin" ? "active" : ""}`} onClick={() => setTab("signin")}>Sign In</button>
               <button className={`am-tab ${tab === "signup" ? "active" : ""}`} onClick={() => setTab("signup")}>Sign Up</button>
             </div>
             {tab === "signin"
