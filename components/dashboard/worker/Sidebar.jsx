@@ -56,9 +56,7 @@ export default function Sidebar() {
 
   useEffect(() => {
     document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = 'unset';
-    };
+    return () => { document.body.style.overflow = 'unset'; };
   }, []);
 
   const handleSignOut = async () => {
@@ -88,8 +86,7 @@ export default function Sidebar() {
           flex-shrink: 0;
           height: 100vh;
           position: sticky;
-          top: 0;
-          left: 0;
+          top: 0; left: 0;
           overflow-y: auto;
           overflow-x: hidden;
           transition: width 0.32s cubic-bezier(0.4,0,0.2,1);
@@ -124,12 +121,15 @@ export default function Sidebar() {
           pointer-events: none;
         }
 
+        /* HEADER — no bottom border */
         .sb-head {
-          padding: ${collapsed ? '20px 16px' : '22px 20px'};
-          display: flex; align-items: center; gap: 12px;
-          border-bottom: 1px solid rgba(255,255,255,0.07);
-          min-height: 76px;
+          padding: ${collapsed ? '20px 16px 10px' : '22px 20px 10px'};
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          min-height: 66px;
           transition: padding .3s;
+          text-decoration: none;
         }
 
         .sb-logo {
@@ -140,13 +140,11 @@ export default function Sidebar() {
           display: flex; align-items: center; justify-content: center;
           position: relative; overflow: hidden;
         }
-
         .sb-logo-img {
           width: 100%; height: 100%;
           object-fit: contain;
           filter: brightness(0) invert(1);
         }
-
         .sb-logo-fallback {
           font-family: 'Lexend', sans-serif;
           font-weight: 700; font-size: 13px; color: #fff;
@@ -171,20 +169,25 @@ export default function Sidebar() {
           letter-spacing: 1.4px; text-transform: uppercase; margin-top: 2px;
         }
 
+        /* USER — avatar + name/email all centered */
         .sb-user {
-          padding: ${collapsed ? '14px 12px' : '14px 20px'};
+          padding: ${collapsed ? '10px 12px 16px' : '10px 20px 18px'};
           border-bottom: 1px solid rgba(255,255,255,0.07);
-          display: flex; align-items: center; gap: 12px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 8px;
           transition: padding .3s;
         }
+
         .sb-avatar {
-          width: 38px; height: 38px; flex-shrink: 0;
+          width: 44px; height: 44px; flex-shrink: 0;
           background: rgba(45,184,160,0.25);
           border: 1.5px solid rgba(45,184,160,0.45);
           border-radius: 50%;
           display: flex; align-items: center; justify-content: center;
           font-family: 'Lexend', sans-serif;
-          font-weight: 700; font-size: 12px; color: #fff;
+          font-weight: 700; font-size: 14px; color: #fff;
           position: relative;
         }
         .sb-dot {
@@ -194,8 +197,11 @@ export default function Sidebar() {
           border: 2px solid #1A2744;
           box-shadow: 0 0 0 1.5px rgba(45,184,160,0.4);
         }
+
         .sb-uinfo {
           overflow: hidden;
+          width: 100%;
+          text-align: center;
           opacity: ${collapsed ? 0 : 1};
           transition: opacity .2s;
         }
@@ -211,6 +217,7 @@ export default function Sidebar() {
           white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px;
         }
 
+        /* NAV */
         .sb-nav {
           flex: 1; padding: 10px 8px;
           display: flex; flex-direction: column; gap: 1px;
@@ -286,6 +293,7 @@ export default function Sidebar() {
         }
         .sb-item:hover .sb-tip { opacity: 1; }
 
+        /* FOOTER */
         .sb-foot {
           padding: 10px 8px;
           border-top: 1px solid rgba(255,255,255,0.07);
@@ -368,10 +376,10 @@ export default function Sidebar() {
             </div>
             <div className="sb-brand">
               <div className="sb-brand-name">InklusiJobs</div>
-              <div className="sb-brand-sub">AI Platform</div>
             </div>
           </Link>
 
+          {/* USER — centered avatar, name, email */}
           <div className="sb-user">
             <div className="sb-avatar">
               {initials}<div className="sb-dot" />
@@ -382,7 +390,8 @@ export default function Sidebar() {
             </div>
           </div>
 
-                    <nav className="sb-nav">
+          {/* NAV */}
+          <nav className="sb-nav">
             <div className="sb-section-label">Main Menu</div>
             {NAV_ITEMS.filter(i => i.group === 'main').map(({ id, label, icon: Icon, path, badge }) => (
               <Link
@@ -409,8 +418,9 @@ export default function Sidebar() {
                 <div className="sb-tip">{label}</div>
               </Link>
             ))}
-          </nav> {/* Make sure this closing tag exists */}
+          </nav>
 
+          {/* FOOTER */}
           <div className="sb-foot">
             <Link href="/notifications" className="sb-fitem">
               <Bell /><span>Notifications</span>
