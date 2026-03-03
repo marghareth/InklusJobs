@@ -382,7 +382,7 @@ export default function Sidebar() {
             </div>
           </div>
 
-          <nav className="sb-nav">
+                    <nav className="sb-nav">
             <div className="sb-section-label">Main Menu</div>
             {NAV_ITEMS.filter(i => i.group === 'main').map(({ id, label, icon: Icon, path, badge }) => (
               <Link
@@ -409,7 +409,7 @@ export default function Sidebar() {
                 <div className="sb-tip">{label}</div>
               </Link>
             ))}
-          </nav>
+          </nav> {/* Make sure this closing tag exists */}
 
           <div className="sb-foot">
             <Link href="/notifications" className="sb-fitem">
