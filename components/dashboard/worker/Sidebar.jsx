@@ -54,28 +54,24 @@ export default function Sidebar() {
   const isActive = (path) => pathname === path;
   const { fullName, initials, email } = getSidebarUser();
 
-  // Handle window scroll to maintain fixed position
   useEffect(() => {
-    // This ensures the sidebar stays fixed regardless of scroll
     document.body.style.overflow = 'hidden';
     return () => {
       document.body.style.overflow = 'unset';
     };
   }, []);
+
   const handleSignOut = async () => {
     try {
       await signOut(auth);
-      // ✅ Clear all auth cookies
       document.cookie = "firebase_token=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
       document.cookie = "ij_role=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
       document.cookie = "ij_onboarded=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
-      // ✅ Clear relevant localStorage
       localStorage.removeItem("ij_role");
       localStorage.removeItem("worker_first_name");
       localStorage.removeItem("worker_last_name");
       localStorage.removeItem("worker_welcome_seen");
       localStorage.removeItem("worker_profile");
-      // ✅ Go back to landing page
       router.push("/");
     } catch (err) {
       console.error("Sign out error:", err);
@@ -86,12 +82,6 @@ export default function Sidebar() {
     <>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800&display=swap');
-
-        .layout-container {
-          display: flex;
-          height: 100vh;
-          overflow: hidden;
-        }
 
         .sb-wrapper {
           width: ${w};
@@ -107,9 +97,7 @@ export default function Sidebar() {
           -ms-overflow-style: none;
         }
 
-        .sb-wrapper::-webkit-scrollbar {
-          display: none;
-        }
+        .sb-wrapper::-webkit-scrollbar { display: none; }
 
         .sb {
           min-height: 100vh;
@@ -150,22 +138,18 @@ export default function Sidebar() {
           border: 1.5px solid rgba(45,184,160,0.45);
           border-radius: 10px;
           display: flex; align-items: center; justify-content: center;
-          position: relative;
-          overflow: hidden;
+          position: relative; overflow: hidden;
         }
 
         .sb-logo-img {
-          width: 100%;
-          height: 100%;
+          width: 100%; height: 100%;
           object-fit: contain;
-          filter: brightness(0) invert(1); /* Makes dark logos white - remove if logo is already white */
+          filter: brightness(0) invert(1);
         }
 
         .sb-logo-fallback {
           font-family: 'Lexend', sans-serif;
-          font-weight: 700; 
-          font-size: 13px; 
-          color: #fff;
+          font-weight: 700; font-size: 13px; color: #fff;
         }
 
         .sb-brand {
@@ -178,15 +162,13 @@ export default function Sidebar() {
         .sb-brand-name {
           font-family: 'Lexend', sans-serif;
           font-weight: 700; font-size: 15px;
-          color: #FFFFFF;
-          letter-spacing: -.3px; line-height: 1.2;
+          color: #FFFFFF; letter-spacing: -.3px; line-height: 1.2;
         }
         .sb-brand-sub {
           font-family: 'Lexend', sans-serif;
           font-size: 9.5px; font-weight: 500;
           color: rgba(45,184,160,0.80);
-          letter-spacing: 1.4px; text-transform: uppercase;
-          margin-top: 2px;
+          letter-spacing: 1.4px; text-transform: uppercase; margin-top: 2px;
         }
 
         .sb-user {
@@ -208,8 +190,7 @@ export default function Sidebar() {
         .sb-dot {
           position: absolute; bottom: 1px; right: 1px;
           width: 9px; height: 9px;
-          background: #2DB8A0;
-          border-radius: 50%;
+          background: #2DB8A0; border-radius: 50%;
           border: 2px solid #1A2744;
           box-shadow: 0 0 0 1.5px rgba(45,184,160,0.4);
         }
@@ -220,16 +201,14 @@ export default function Sidebar() {
         }
         .sb-uname {
           font-family: 'Lexend', sans-serif;
-          font-weight: 600; font-size: 13px;
-          color: #FFFFFF;
+          font-weight: 600; font-size: 13px; color: #FFFFFF;
           white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
         .sb-uemail {
           font-family: 'Lexend', sans-serif;
           font-size: 10.5px; font-weight: 300;
           color: rgba(45,184,160,0.70);
-          white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-          margin-top: 1px;
+          white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px;
         }
 
         .sb-nav {
@@ -242,15 +221,13 @@ export default function Sidebar() {
           font-size: 9px; font-weight: 600;
           letter-spacing: 1.8px; text-transform: uppercase;
           color: rgba(45,184,160,0.60);
-          padding: 10px 10px 4px;
-          white-space: nowrap;
+          padding: 10px 10px 4px; white-space: nowrap;
           opacity: ${collapsed ? 0 : 1};
           transition: opacity .2s;
         }
 
         .sb-item {
-          display: flex; align-items: center;
-          gap: 12px;
+          display: flex; align-items: center; gap: 12px;
           padding: ${collapsed ? '11px' : '10px 12px'};
           border-radius: 10px; cursor: pointer;
           transition: all .18s ease; position: relative;
@@ -258,10 +235,7 @@ export default function Sidebar() {
           justify-content: ${collapsed ? 'center' : 'flex-start'};
           text-decoration: none;
         }
-        .sb-item:hover {
-          background: rgba(255,255,255,0.08);
-          border-color: rgba(255,255,255,0.10);
-        }
+        .sb-item:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.10); }
         .sb-item:hover .sb-icon   { color: #FFFFFF; }
         .sb-item:hover .sb-ilabel { color: #FFFFFF; font-weight: 500; }
 
@@ -272,24 +246,20 @@ export default function Sidebar() {
         }
         .sb-item.active::before {
           content: ''; position: absolute; left: 0; top: 16%; bottom: 16%;
-          width: 3px;
-          background: #2DB8A0;
-          border-radius: 0 3px 3px 0;
-          box-shadow: 0 0 8px rgba(45,184,160,0.6);
+          width: 3px; background: #2DB8A0;
+          border-radius: 0 3px 3px 0; box-shadow: 0 0 8px rgba(45,184,160,0.6);
         }
         .sb-item.active .sb-icon   { color: #2DB8A0; }
         .sb-item.active .sb-ilabel { color: #FFFFFF; font-weight: 600; }
 
         .sb-icon {
           width: 17px; height: 17px; flex-shrink: 0;
-          color: rgba(255,255,255,0.60);
-          transition: color .18s;
+          color: rgba(255,255,255,0.60); transition: color .18s;
         }
         .sb-ilabel {
           font-family: 'Lexend', sans-serif;
           font-size: 13px; font-weight: 400;
-          color: rgba(255,255,255,0.82);
-          white-space: nowrap;
+          color: rgba(255,255,255,0.82); white-space: nowrap;
           opacity: ${collapsed ? 0 : 1};
           transition: opacity .2s, color .18s, font-weight .18s;
           letter-spacing: -0.1px;
@@ -298,28 +268,21 @@ export default function Sidebar() {
           margin-left: auto; padding: 2px 7px;
           background: rgba(45,184,160,0.22);
           border: 1px solid rgba(45,184,160,0.40);
-          color: #2DB8A0;
-          font-size: 9px; font-weight: 700;
-          font-family: 'Lexend', sans-serif;
-          border-radius: 20px;
-          opacity: ${collapsed ? 0 : 1};
-          transition: opacity .2s;
+          color: #2DB8A0; font-size: 9px; font-weight: 700;
+          font-family: 'Lexend', sans-serif; border-radius: 20px;
+          opacity: ${collapsed ? 0 : 1}; transition: opacity .2s;
         }
 
         .sb-tip {
           display: ${collapsed ? 'block' : 'none'};
           position: absolute; left: 62px;
-          background: rgba(13,24,41,0.97);
-          backdrop-filter: blur(10px);
-          color: #FFFFFF;
-          font-size: 12px;
-          font-family: 'Lexend', sans-serif;
-          font-weight: 500;
+          background: rgba(13,24,41,0.97); backdrop-filter: blur(10px);
+          color: #FFFFFF; font-size: 12px;
+          font-family: 'Lexend', sans-serif; font-weight: 500;
           padding: 5px 11px; border-radius: 7px; white-space: nowrap;
           border: 1px solid rgba(45,184,160,0.22);
           pointer-events: none; opacity: 0; transition: opacity .15s;
-          z-index: 100;
-          box-shadow: 0 4px 16px rgba(0,0,0,0.30);
+          z-index: 100; box-shadow: 0 4px 16px rgba(0,0,0,0.30);
         }
         .sb-item:hover .sb-tip { opacity: 1; }
 
@@ -332,20 +295,14 @@ export default function Sidebar() {
           display: flex; align-items: center; gap: 12px;
           padding: ${collapsed ? '10px' : '9px 12px'};
           border-radius: 10px; cursor: pointer;
-          color: rgba(255,255,255,0.50);
-          transition: all .18s;
+          color: rgba(255,255,255,0.50); transition: all .18s;
           border: 1px solid transparent;
           justify-content: ${collapsed ? 'center' : 'flex-start'};
-          position: relative;
-          text-decoration: none;
-          background: none;
-          width: 100%;
+          position: relative; text-decoration: none;
+          background: none; width: 100%;
           font-family: 'Lexend', sans-serif;
         }
-        .sb-fitem:hover {
-          background: rgba(255,255,255,0.07);
-          color: rgba(255,255,255,0.90);
-        }
+        .sb-fitem:hover { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.90); }
         .sb-fitem.danger:hover {
           background: rgba(220,70,70,0.10);
           color: rgba(255,140,130,0.95);
@@ -353,13 +310,9 @@ export default function Sidebar() {
         }
         .sb-fitem svg { width: 15px; height: 15px; flex-shrink: 0; }
         .sb-fitem span {
-          font-size: 13px;
-          font-family: 'Lexend', sans-serif;
-          font-weight: 400;
-          color: rgba(255,255,255,0.65);
-          white-space: nowrap;
-          opacity: ${collapsed ? 0 : 1};
-          transition: opacity .2s, color .18s;
+          font-size: 13px; font-family: 'Lexend', sans-serif; font-weight: 400;
+          color: rgba(255,255,255,0.65); white-space: nowrap;
+          opacity: ${collapsed ? 0 : 1}; transition: opacity .2s, color .18s;
         }
         .sb-fitem:hover span { color: rgba(255,255,255,0.92); }
         .sb-fitem.danger:hover span { color: rgba(255,140,130,0.95); }
@@ -367,12 +320,9 @@ export default function Sidebar() {
         .sb-ftip {
           display: ${collapsed ? 'block' : 'none'};
           position: absolute; left: 62px;
-          background: rgba(13,24,41,0.97);
-          backdrop-filter: blur(10px);
-          color: #FFFFFF;
-          font-size: 12px;
-          font-family: 'Lexend', sans-serif;
-          font-weight: 500;
+          background: rgba(13,24,41,0.97); backdrop-filter: blur(10px);
+          color: #FFFFFF; font-size: 12px;
+          font-family: 'Lexend', sans-serif; font-weight: 500;
           padding: 5px 11px; border-radius: 7px; white-space: nowrap;
           border: 1px solid rgba(45,184,160,0.22);
           pointer-events: none; opacity: 0; transition: opacity .15s;
@@ -388,13 +338,10 @@ export default function Sidebar() {
           border-radius: 50%;
           display: flex; align-items: center; justify-content: center;
           cursor: pointer; color: rgba(255,255,255,0.70);
-          transition: all .2s;
-          box-shadow: 0 2px 10px rgba(0,0,0,0.30);
-          z-index: 20;
+          transition: all .2s; box-shadow: 0 2px 10px rgba(0,0,0,0.30); z-index: 20;
         }
         .sb-toggle:hover {
-          background: rgba(45,184,160,0.22);
-          color: #fff;
+          background: rgba(45,184,160,0.22); color: #fff;
           border-color: rgba(45,184,160,0.60);
           box-shadow: 0 0 14px rgba(45,184,160,0.25);
         }
@@ -402,6 +349,7 @@ export default function Sidebar() {
 
       <div className="sb-wrapper">
         <aside className="sb">
+
           <Link href="/dashboard/worker" className="sb-head" style={{ textDecoration: 'none' }}>
             <div className="sb-logo">
               {!logoError ? (
@@ -477,8 +425,9 @@ export default function Sidebar() {
           <div className="sb-toggle" onClick={() => setCollapsed(!collapsed)}>
             {collapsed ? <ChevronRight size={12} /> : <ChevronLeft size={12} />}
           </div>
-        </aside> {/* This should close the <aside> tag */}
-      </div> {/* This should close the <div className="sb-wrapper"> */}
+
+        </aside>
+      </div>
     </>
   );
 }
