@@ -4,6 +4,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { getChallengeForPhase } from "@/lib/learn-content";
+import DashboardLayout from "@/components/dashboard/worker/DashboardLayout";
 
 // ─── localStorage helpers ────────────────────────────────────────────────────
 const LS = {
@@ -296,7 +297,7 @@ export default function ChallengesPage() {
   const totalCount    = allChallenges.length;
   const overallPct    = totalCount > 0 ? Math.round((totalDone / totalCount) * 100) : 0;
 
-  return (
+  const content = (
     <>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
@@ -584,5 +585,11 @@ export default function ChallengesPage() {
         </div>
       </div>
     </>
+  );
+
+  return (
+    <DashboardLayout>
+      {content}
+    </DashboardLayout>
   );
 }

@@ -4,12 +4,6 @@
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { getChallengeById } from "@/lib/learn-content";
-import { createClient } from "@supabase/supabase-js";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-);
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default function ChallengePage() {
@@ -35,9 +29,13 @@ export default function ChallengePage() {
     setChallenge(ch);
     setTimeout(() => setRevealed(true), 100);
 
-    supabase.auth.getUser().then(({ data }) => {
-      if (data?.user) setUserId(data.user.id);
-    });
+    // In this demo build, user id may be stored locally (same pattern as quizzes)
+    try {
+      const user = JSON.parse(localStorage.getItem("ij_current_user") || "null");
+      if (user?.id) setUserId(user.id);
+    } catch {
+      // ignore
+    }
   }, [challengeId, router]);
 
   const handleSubmit = async () => {
@@ -45,18 +43,37 @@ export default function ChallengePage() {
     setView("scoring");
 
     try {
-      const res = await fetch("/api/challenge/score", {
+      const res = await fetch("/api/challenges/evaluate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           challengeId,
-          jobId,
-          challenge,
-          submission,
+          challengeTitle: challenge.title,
+          challengeBrief: challenge.brief,
+          rubric:        challenge.rubric,
+          submissionText: submission,
+          submissionUrl:  null,
           userId,
+          jobId,
+          phaseNumber: challenge.phaseNumber,
         }),
       });
       const data = await res.json();
+
+      if (data?.success) {
+        // Mark challenge as completed in legacy progress key so roadmap/challenges unlock correctly
+        try {
+          const key = "inklusijobs_completed_challenges";
+          const existing = JSON.parse(localStorage.getItem(key) || "[]");
+          if (data.passed && !existing.includes(challengeId)) {
+            const next = [...existing, challengeId];
+            localStorage.setItem(key, JSON.stringify(next));
+          }
+        } catch {
+          // ignore storage errors
+        }
+      }
+
       setResult(data);
       setView("result");
     } catch (e) {
